@@ -3,7 +3,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2019.                            (c) 2019.
+#  (c) 2020.                            (c) 2020.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -67,70 +67,21 @@
 # ***********************************************************************
 #
 
-"""
-Implements the default entry point functions for the workflow 
-application.
-
-'run' executes based on either provided lists of work, or files on disk.
-'run_by_state' executes incrementally, usually based on time-boxed 
-intervals.
-"""
-
-import logging
-import sys
-import traceback
-
-from caom2pipe import run_composable as rc
-from blank2caom2 import APPLICATION, BlankName
+from caom2pipe import manage_composable as mc
+from visitCaom2 import visit_augmentation
+import test_composable
 
 
-META_VISITORS = []
-DATA_VISITORS = []
+def test_visit_augmentation():
+    f_list = {'20090629-a96458f347efa3cbcd0f28171743e9cb.expected.xml': 6,
+              'M10AN02-76bdd3b5c47be9be5dcbd940b6e922f4.xml': 31}
 
-
-def _run():
-    """
-    Uses a todo file to identify the work to be done.
-
-    :return 0 if successful, -1 if there's any sort of failure. Return status
-        is used by airflow for task instance management and reporting.
-    """
-    return rc.run_by_todo(config=None, name_builder=None, 
-                          command_name=APPLICATION,
-                          meta_visitors=META_VISITORS, 
-                          data_visitors=DATA_VISITORS, chooser=None)
-
-
-def run():
-    """Wraps _run in exception handling, with sys.exit calls."""
-    try:
-        result = _run()
-        sys.exit(result)
-    except Exception as e:
-        logging.error(e)
-        tb = traceback.format_exc()
-        logging.debug(tb)
-        sys.exit(-1)
-
-
-def _run_state():
-    """Uses a state file with a timestamp to control which entries will be
-    processed.
-    """
-    return rc.run_by_state(config=None, name_builder=None,
-                           command_name=APPLICATION, 
-                           bookmark_name=None, meta_visitors=META_VISITORS,
-                           data_visitors=DATA_VISITORS, end_time=None,
-                           source=None, chooser=None)
-
-
-def run_state():
-    """Wraps _run_state in exception handling."""
-    try:
-        _run_state()
-        sys.exit(0)
-    except Exception as e:
-        logging.error(e)
-        tb = traceback.format_exc()
-        logging.debug(tb)
-        sys.exit(-1)
+    kwargs = {}
+    for key, value in f_list.items():
+        fqn = f'{test_composable.TEST_DATA_DIR}/{key}'
+        test_obs = mc.read_obs_from_file(fqn)
+        test_result = visit_augmentation.visit(test_obs, **kwargs)
+        assert test_result is not None, 'expect a result'
+        changed = test_result.get('chunks')
+        assert changed == value, 'wrong result'
+        mc.write_obs_to_file(test_obs, './x.xml')

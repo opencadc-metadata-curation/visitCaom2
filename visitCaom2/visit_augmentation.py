@@ -3,7 +3,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2019.                            (c) 2019.
+#  (c) 2020.                            (c) 2020.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -62,78 +62,67 @@
 #  <http://www.gnu.org/licenses/>.      pas le cas, consultez :
 #                                       <http://www.gnu.org/licenses/>.
 #
-#  $Revision: 4 $
+#  : 4 $
 #
 # ***********************************************************************
 #
 
-from mock import patch
-
-from caom2.obs_reader_writer import CAOM24_NAMESPACE
-from blank2caom2 import main_app, APPLICATION, COLLECTION, BlankName
-from blank2caom2 import ARCHIVE
+import logging
+from caom2 import Observation
 from caom2pipe import manage_composable as mc
 
-import glob
-import os
-import sys
 
-THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-TEST_DATA_DIR = os.path.join(THIS_DIR, 'data')
-PLUGIN = os.path.join(os.path.dirname(THIS_DIR), 'main_app.py')
+def visit(observation, **kwargs):
+    mc.check_param(observation, Observation)
+    count = 0
+    changed = False
 
+    for plane in observation.planes.values():
+        for artifact in plane.artifacts.values():
+            for part in artifact.parts.values():
+                for chunk in part.chunks:
+                    n_axis_count = 0
+                    if chunk.position is None:
+                        if (chunk.position_axis_1 is not None or
+                                chunk.position_axis_2 is not None):
+                            chunk.position_axis_1 = None
+                            chunk.position_axis_2 = None
+                            changed = True
+                    else:
+                        if (chunk.position_axis_1 is None or
+                                chunk.position_axis_2 is None):
+                            chunk.position_axis_1 = 1
+                            chunk.position_axis_2 = 2
+                            changed = True
+                            n_axis_count = 2
 
-def pytest_generate_tests(metafunc):
-    obs_id_list = glob.glob(f'{TEST_DATA_DIR}/*.fits.header')
-    metafunc.parametrize('test_name', obs_id_list)
+                    if chunk.energy is None:
+                        if chunk.energy_axis is not None:
+                            chunk.energy_axis = None
+                            changed = True
+                    else:
+                        if chunk.energy_axis is None:
+                            chunk.energy_axis = n_axis_count + 1
+                            changed = True
 
+                    if chunk.observable is None:
+                        if chunk.observable_axis is not None:
+                            chunk.observable_axis = None
+                            changed = True
 
-@patch('caom2utils.fits2caom2.CadcDataClient')
-@patch('caom2pipe.astro_composable.get_vo_table')
-def test_main_app(vo_mock, data_client_mock, test_name):
-    basename = os.path.basename(test_name)
-    extension = '.fz'
-    file_name = basename.replace('.header', extension)
-    blank_name = BlankName(file_name=file_name)
-    obs_path = f'{TEST_DATA_DIR}/{blank_name.obs_id}.expected.xml'
-    output_file = f'{TEST_DATA_DIR}/{basename}.actual.xml'
+                    if chunk.custom is None:
+                        if chunk.custom_axis is not None:
+                            chunk.custom_axis = None
+                            changed = True
 
-    if os.path.exists(output_file):
-        os.unlink(output_file)
+                    if chunk.polarization is None:
+                        if chunk.polarization_axis is not None:
+                            chunk.polarization_axis = None
+                            changed = True
 
-    local = _get_local(basename)
-
-    data_client_mock.return_value.get_file_info.side_effect = _get_file_info
-
-    sys.argv = \
-        (f'{APPLICATION} --no_validate --caom_namespace {CAOM24_NAMESPACE} '
-         f'--local {local} --observation {COLLECTION} {blank_name.obs_id} -o '
-         f'{output_file} --plugin {PLUGIN} --module {PLUGIN} --lineage '
-         f'{_get_lineage(blank_name)}'
-         ).split()
-    print(sys.argv)
-    try:
-        main_app.to_caom2()
-    except Exception as e:
-        import logging
-        import traceback
-        logging.error(traceback.format_exc())
-
-    compare_result = mc.compare_observations(output_file, obs_path)
-    if compare_result is not None:
-        raise AssertionError(compare_result)
-    # assert False  # cause I want to see logging messages
-
-
-def _get_file_info(archive, file_id):
-    return {'type': 'application/fits'}
-
-
-def _get_lineage(blank_name):
-    result = mc.get_lineage(ARCHIVE, blank_name.product_id,
-                            f'{blank_name.file_name}')
-    return result
-
-
-def _get_local(obs_id):
-    return f'{TEST_DATA_DIR}/{obs_id}.fits.header'
+                    if changed:
+                        chunk.naxis = n_axis_count if n_axis_count > 0 else None
+                        count += 1
+                        changed = False
+    logging.info(f'Changing {count} chunks for {observation.observation_id}.')
+    return {'chunks': count}

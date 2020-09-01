@@ -3,7 +3,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2019.                            (c) 2019.
+#  (c) 2020.                            (c) 2020.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -66,8 +66,37 @@
 #
 # ***********************************************************************
 #
-from blank2caom2 import BlankName
+
+import os
+
+from mock import Mock, patch
+
+from caom2pipe import manage_composable as mc
+from visitCaom2 import composable
 
 
-def test_is_valid():
-    assert BlankName('anything').is_valid()
+THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+TEST_DATA_DIR = os.path.join(THIS_DIR, 'data')
+
+
+@patch('caom2pipe.execute_composable.OrganizeExecutesWithDoOne.do_one')
+def test_run(run_mock):
+    test_obs_id = 'TEST_OBS_ID'
+    test_f_id = 'test_file_id'
+    test_f_name = f'{test_f_id}.fits'
+    getcwd_orig = os.getcwd
+    os.getcwd = Mock(return_value=TEST_DATA_DIR)
+    try:
+        # execution
+        composable._run()
+        assert run_mock.called, 'should have been called'
+        args, kwargs = run_mock.call_args
+        test_storage = args[0]
+        assert isinstance(
+            test_storage, mc.StorageName), type(test_storage)
+        assert test_storage.obs_id == test_obs_id, 'wrong obs id'
+        assert test_storage.url is None, 'wrong url'
+        assert test_storage.lineage == \
+            'TEST_OBS_ID/ad:None/TEST_OBS_ID.fits.gz', 'wrong lineage'
+    finally:
+        os.getcwd = getcwd_orig
