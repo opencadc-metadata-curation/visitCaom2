@@ -11,13 +11,21 @@ In an empty directory (the 'working directory'), on a machine with Docker instal
   wget https://raw.github.com/opencadc-metadata-curation/visitCaom2/master/scripts/visit_run.sh
   ```
 
-2. Ensure the script is executable:
+2. Create a text file named `todo.txt`. This file will have all the observationIDs that require repair, one ID per line. e.g.:
+
+  ```
+  20090629-a96458f347efa3cbcd0f28171743e9cb
+  20150612-418df74888cfeff1651599d5703218a1
+  acsis_00015_20070529T090717
+  ...
+  ```
+3. Ensure the script is executable:
 
 ```
 chmod +x visit_run.sh
 ```
 
-3. To run the application:
+4. To run the application:
 
 ```
 ./visit_run.sh
