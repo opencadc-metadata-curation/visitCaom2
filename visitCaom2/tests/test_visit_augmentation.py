@@ -73,8 +73,19 @@ import test_composable
 
 
 def test_visit_augmentation():
-    f_list = {'20090629-a96458f347efa3cbcd0f28171743e9cb.expected.xml': 6,
-              'M10AN02-76bdd3b5c47be9be5dcbd940b6e922f4.xml': 31}
+    f_list = {
+        # positionAxis1 or positionAxis2 is null
+        '20090629-a96458f347efa3cbcd0f28171743e9cb.expected.xml': 6,
+        # missing axis 1
+        's04bu10_20041103_0009_project.xml': 2,
+        # observableAxis found (1) but metadata not found
+        '20150612-418df74888cfeff1651599d5703218a1.xml': 6,
+        # positionAxis1 found (1) but metadata not found
+        'acsis_00015_20070529T090717.xml': 5,
+        # this is the trouble-some one that had no position information
+        # but apparently should have
+        # 'M10AN02-76bdd3b5c47be9be5dcbd940b6e922f4.xml': 31
+    }
 
     kwargs = {}
     for key, value in f_list.items():
@@ -84,4 +95,5 @@ def test_visit_augmentation():
         assert test_result is not None, 'expect a result'
         changed = test_result.get('chunks')
         assert changed == value, 'wrong result'
-        mc.write_obs_to_file(test_obs, './x.xml')
+        mc.write_obs_to_file(
+            test_obs, f'{test_composable.TEST_DATA_DIR}/{key}.actual.xml')
