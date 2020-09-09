@@ -1,7 +1,7 @@
 #!/bin/bash
 
 COLLECTION="visit"
-IMAGE="opencadc/${COLLECTION}Caom2"
+IMAGE="opencadc/${COLLECTION}caom2"
 
 echo "Get a proxy certificate"
 cp $HOME/.ssl/cadcproxy.pem ./ || exit $?
