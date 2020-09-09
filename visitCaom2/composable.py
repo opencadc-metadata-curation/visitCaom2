@@ -80,11 +80,13 @@ import logging
 import sys
 import traceback
 
+from caom2pipe import manage_composable as mc
+from caom2pipe import name_builder_composable as nbc
 from caom2pipe import run_composable as rc
-from blank2caom2 import APPLICATION, BlankName
+from visitCaom2 import visit_augmentation
 
 
-META_VISITORS = []
+META_VISITORS = [visit_augmentation]
 DATA_VISITORS = []
 
 
@@ -95,8 +97,9 @@ def _run():
     :return 0 if successful, -1 if there's any sort of failure. Return status
         is used by airflow for task instance management and reporting.
     """
-    return rc.run_by_todo(config=None, name_builder=None, 
-                          command_name=APPLICATION,
+    return rc.run_by_todo(config=None,
+                          name_builder=nbc.ObsIDBuilder(mc.StorageName),
+                          command_name='visitCaom2',
                           meta_visitors=META_VISITORS, 
                           data_visitors=DATA_VISITORS, chooser=None)
 
@@ -106,29 +109,6 @@ def run():
     try:
         result = _run()
         sys.exit(result)
-    except Exception as e:
-        logging.error(e)
-        tb = traceback.format_exc()
-        logging.debug(tb)
-        sys.exit(-1)
-
-
-def _run_state():
-    """Uses a state file with a timestamp to control which entries will be
-    processed.
-    """
-    return rc.run_by_state(config=None, name_builder=None,
-                           command_name=APPLICATION, 
-                           bookmark_name=None, meta_visitors=META_VISITORS,
-                           data_visitors=DATA_VISITORS, end_time=None,
-                           source=None, chooser=None)
-
-
-def run_state():
-    """Wraps _run_state in exception handling."""
-    try:
-        _run_state()
-        sys.exit(0)
     except Exception as e:
         logging.error(e)
         tb = traceback.format_exc()

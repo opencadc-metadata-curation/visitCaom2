@@ -67,39 +67,33 @@
 # ***********************************************************************
 #
 
-import os
-import test_main_app
-
-from mock import Mock, patch
-
-from blank2caom2 import composable, BlankName
+from caom2pipe import manage_composable as mc
+from visitCaom2 import visit_augmentation
+import test_composable
 
 
-def test_run_by_state():
-    pass
+def test_visit_augmentation():
+    f_list = {
+        # positionAxis1 or positionAxis2 is null
+        '20090629-a96458f347efa3cbcd0f28171743e9cb.expected.xml': 6,
+        # missing axis 1
+        's04bu10_20041103_0009_project.xml': 2,
+        # observableAxis found (1) but metadata not found
+        '20150612-418df74888cfeff1651599d5703218a1.xml': 6,
+        # positionAxis1 found (1) but metadata not found
+        'acsis_00015_20070529T090717.xml': 5,
+        # this is the trouble-some one that had no position information
+        # but apparently should have
+        # 'M10AN02-76bdd3b5c47be9be5dcbd940b6e922f4.xml': 31
+    }
 
-
-@patch('caom2pipe.execute_composable.OrganizeExecutesWithDoOne.do_one')
-def test_run(run_mock):
-    test_obs_id = 'TEST_OBS_ID'
-    test_f_id = 'test_file_id'
-    test_f_name = f'{test_f_id}.fits'
-    getcwd_orig = os.getcwd
-    os.getcwd = Mock(return_value=test_main_app.TEST_DATA_DIR)
-    try:
-        # execution
-        composable._run()
-        assert run_mock.called, 'should have been called'
-        args, kwargs = run_mock.call_args
-        test_storage = args[0]
-        assert isinstance(
-            test_storage, BlankName), type(test_storage)
-        assert test_storage.obs_id == test_obs_id, 'wrong obs id'
-        assert test_storage.file_name == test_f_name, 'wrong file name'
-        assert test_storage.fname_on_disk == test_f_name, \
-            'wrong fname on disk'
-        assert test_storage.url is None, 'wrong url'
-        assert test_storage.lineage == \
-            f'{test_f_id}/ad:blank/{test_f_name}', 'wrong lineage'
-    finally:
-        os.getcwd = getcwd_orig
+    kwargs = {}
+    for key, value in f_list.items():
+        fqn = f'{test_composable.TEST_DATA_DIR}/{key}'
+        test_obs = mc.read_obs_from_file(fqn)
+        test_result = visit_augmentation.visit(test_obs, **kwargs)
+        assert test_result is not None, 'expect a result'
+        changed = test_result.get('chunks')
+        assert changed == value, 'wrong result'
+        mc.write_obs_to_file(
+            test_obs, f'{test_composable.TEST_DATA_DIR}/{key}.actual.xml')

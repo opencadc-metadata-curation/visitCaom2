@@ -1,2 +1,2 @@
-# blank2caom2
-Starting point to build an application to generate CAOM2 Observations from FITS files.
+# visitCaom2
+An application to visit CAOM2 Observations without access to FITS files.
