@@ -79,6 +79,8 @@ def visit(observation, **kwargs):
 
     for plane in observation.planes.values():
         for artifact in plane.artifacts.values():
+            if '.sdf' in artifact.uri:
+                continue
             for part in artifact.parts.values():
                 for chunk in part.chunks:
                     n_axis_count = 0
