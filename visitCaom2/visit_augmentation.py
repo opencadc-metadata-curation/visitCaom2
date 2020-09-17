@@ -80,6 +80,8 @@ def visit(observation, **kwargs):
     for plane in observation.planes.values():
         for artifact in plane.artifacts.values():
             if '.sdf' in artifact.uri:
+                # GB 15=09-20
+                # ignore sdf files as they aren't cutout candidates
                 continue
             for part in artifact.parts.values():
                 for chunk in part.chunks:
