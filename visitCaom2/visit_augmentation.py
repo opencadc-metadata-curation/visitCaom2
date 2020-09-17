@@ -79,6 +79,10 @@ def visit(observation, **kwargs):
 
     for plane in observation.planes.values():
         for artifact in plane.artifacts.values():
+            if '.sdf' in artifact.uri:
+                # GB 15=09-20
+                # ignore sdf files as they aren't cutout candidates
+                continue
             for part in artifact.parts.values():
                 for chunk in part.chunks:
                     n_axis_count = 0
@@ -101,13 +105,19 @@ def visit(observation, **kwargs):
                             chunk.energy_axis = None
                             changed = True
                     else:
+                        n_axis_count += 1
                         if chunk.energy_axis is None:
-                            chunk.energy_axis = n_axis_count + 1
+                            chunk.energy_axis = n_axis_count
                             changed = True
 
                     if chunk.observable is None:
                         if chunk.observable_axis is not None:
                             chunk.observable_axis = None
+                            changed = True
+                    else:
+                        n_axis_count += 1
+                        if chunk.observable_axis is None:
+                            chunk.observable_axis = n_axis_count
                             changed = True
 
                     if chunk.custom is None:
@@ -118,6 +128,11 @@ def visit(observation, **kwargs):
                     if chunk.polarization is None:
                         if chunk.polarization_axis is not None:
                             chunk.polarization_axis = None
+                            changed = True
+                    else:
+                        n_axis_count += 1
+                        if chunk.polarization_axis is None:
+                            chunk.polarization_axis = n_axis_count
                             changed = True
 
                     if changed:

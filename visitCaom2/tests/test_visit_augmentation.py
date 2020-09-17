@@ -81,7 +81,7 @@ def test_visit_augmentation():
         # observableAxis found (1) but metadata not found
         '20150612-418df74888cfeff1651599d5703218a1.xml': 6,
         # positionAxis1 found (1) but metadata not found
-        'acsis_00015_20070529T090717.xml': 5,
+        'acsis_00015_20070529T090717.xml': 4,
         # this is the trouble-some one that had no position information
         # but apparently should have
         # 'M10AN02-76bdd3b5c47be9be5dcbd940b6e922f4.xml': 31
